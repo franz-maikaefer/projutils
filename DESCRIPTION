@@ -1,0 +1,23 @@
+Package: projutils
+Type: Package
+Title: Projects Utils
+Version: 0.1.0
+Authors@R: c(
+    person("Mainhardt Carpes", "Franz Walter",
+           email = "franz.maikaefer@gmail.com",
+           role = c("aut", "cre")))
+Description: Utilities used across Projects.
+License: AGPL-3
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.0
+Imports: 
+    dplyr,
+    lubridate,
+    readr,
+    rlang,
+    stringr,
+    tibble
+URL: https://github.com/franz-maikaefer/projutils
+BugReports: https://github.com/franz-maikaefer/projutils/issues
