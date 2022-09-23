@@ -70,3 +70,10 @@ soma <- function(df, por, valores) {
 sum_qtde_and_valor_by <- function(df, ...) {
   df %>% group_by(...) %>% sum_across(c(QTDE, VALOR))
 }
+
+#' @export
+convert_chars_to_unicode_without_invalid <- function(df) {
+  df %>%
+    mutate(across(where(is.character),
+                  ~ iconv(., to = "UTF-8")))
+}
