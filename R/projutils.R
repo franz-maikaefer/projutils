@@ -71,9 +71,20 @@ sum_qtde_and_valor_by <- function(df, ...) {
   df %>% group_by(...) %>% sum_across(c(QTDE, VALOR))
 }
 
+convert_chars_to_encoding_without_invalid <- function(df, dest_encoding) {
+  df %>%
+    mutate(across(where(is.character),
+                  ~ iconv(., to = dest_encoding, sub = "")))
+}
+
 #' @export
 convert_chars_to_unicode_without_invalid <- function(df) {
   df %>%
-    mutate(across(where(is.character),
-                  ~ iconv(., to = "UTF-8")))
+    convert_chars_to_encoding_without_invalid(dest_encoding = "UTF-8")
+}
+
+#' @export
+convert_chars_to_ascii_without_invalid <- function(df) {
+  df %>%
+    convert_chars_to_encoding_without_invalid(dest_encoding = "ASCII//TRANSLIT")
 }
