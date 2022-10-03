@@ -88,3 +88,31 @@ convert_chars_to_ascii_without_invalid <- function(df) {
   df %>%
     convert_chars_to_encoding_without_invalid(dest_encoding = "ASCII//TRANSLIT")
 }
+
+#' @export
+add_quotient_between_cols <- function(to, col, over,
+                                      name_pattern = "{col_nm}_over_{over_nm}") {
+  col <- rlang::enquo(col)
+  col_nm <- rlang::as_name(col)
+  over <- rlang::enquo(over)
+  over_nm <- rlang::as_name(over)
+  quotient_col_nm <- paste0(col_nm, '.over.', over_nm)
+  quotient_col_nm <- stringr::str_glue(name_pattern)
+
+  to %>%
+    mutate(
+      !! quotient_col_nm := .data[[col_nm]]/.data[[over_nm]]
+    ) %>%
+    relocate(all_of(quotient_col_nm), .after = {{col}})
+}
+
+#' @export
+add_quotients_between <- function(to, ..., over,
+                                  name_pattern = "{col_nm}_over_{over_nm}") {
+  cols <- enquos(...)
+  over <- enquo(over)
+  purrr::reduce(cols, function(df, col) {
+    df %>% add_quotient_between_cols(!! col, !! over,
+                                     name_pattern = name_pattern)
+  }, .init = to)
+}
