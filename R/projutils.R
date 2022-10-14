@@ -1,4 +1,4 @@
-#' @import dplyr
+#' @import dplyr, ggplot2
 NULL
 
 #' @export
@@ -92,27 +92,100 @@ convert_chars_to_ascii_without_invalid <- function(df) {
 #' @export
 add_quotient_between_cols <- function(to, col, over,
                                       name_pattern = "{col_nm}_over_{over_nm}") {
-  col <- rlang::enquo(col)
-  col_nm <- rlang::as_name(col)
-  over <- rlang::enquo(over)
-  over_nm <- rlang::as_name(over)
-  quotient_col_nm <- paste0(col_nm, '.over.', over_nm)
+  col_nm <- rlang::as_name(rlang::enquo(col))
+  over_nm <- rlang::as_name(rlang::enquo(over))
   quotient_col_nm <- stringr::str_glue(name_pattern)
 
   to %>%
     mutate(
-      !! quotient_col_nm := .data[[col_nm]]/.data[[over_nm]]
+      "{quotient_col_nm}" := {{ col }}/{{ over }}
     ) %>%
     relocate(all_of(quotient_col_nm), .after = {{col}})
 }
 
 #' @export
-add_quotients_between <- function(to, ..., over,
+add_quotients_between <- function(.data, ..., over,
                                   name_pattern = "{col_nm}_over_{over_nm}") {
-  cols <- enquos(...)
-  over <- enquo(over)
-  purrr::reduce(cols, function(df, col) {
-    df %>% add_quotient_between_cols(!! col, !! over,
-                                     name_pattern = name_pattern)
-  }, .init = to)
+  loc <- tidyselect::eval_select(
+    expr(c(...)),
+    data = .data
+  )
+  loc <- vctrs::vec_as_location(loc, n = ncol(.data), names = names(.data))
+  cols <- rlang::syms(names(.data)[loc])
+
+  purrr::reduce(cols, function(df_i, col) {
+    df_i %>% add_quotient_between_cols({{ col }}, {{ over }},
+                                       name_pattern = name_pattern)
+  },
+  .init = .data
+  )
+}
+
+#' @export
+display_error_as_plot <- function(e) {
+  p <- tibble::tibble(x = 0, y = 10, label = "Error") %>%
+    ggplot(aes(x, y, label = label)) +
+    geom_text(color = "red", size = 12) +
+    theme_void()
+  plotly::ggplotly(p)
+}
+
+#' @export
+create_plot_for_each_nested_df_in <- function(data, .fns) {
+  trelliscopejs::map_plot(
+    data,
+    function(df) {
+      tryCatch(.fns(df), error = display_error_as_plot)
+    }
+  )
+}
+
+#' @export
+error_proof_density <- function(x) {
+  tryCatch(
+    {
+      dens <- density(x, na.rm = TRUE)
+      dens$x[which.max(dens$y)]
+    },
+    error=function(cond) {
+      NA
+    },
+    warning=function(cond) {
+      NA
+    }
+  )
+}
+
+#' @export
+em_reais <- scales::label_dollar(prefix = "R$ ",
+                                 big.mark = ".", decimal.mark = ",")
+
+#' @export
+em_potencias_de_real <-
+  scales::label_dollar(prefix = "R$ ",scale_cut = scales::cut_short_scale())
+
+#' @export
+fmt_br_dt <- function(dt) {
+  format(dt, "%d/%m/%Y")
+}
+
+#' @export
+corr_plot_for_vars_above <- function(df, threshold, reference, renamer = identity) {
+  reference <- renamer(reference)
+
+  cor_ratioVars <-
+    df %>%
+    rename_with(.fn = renamer) %>%
+    stats::cor(., use="pairwise.complete.obs") #correlations of all ratio variables
+
+  cor_sorted <- as.matrix(sort(cor_ratioVars[, reference], decreasing = TRUE))
+  # select only high correlations
+  cor_to_show <-
+    names(which(apply(cor_sorted, 1, function(x) abs(x) > threshold)))
+  cor_ratioVars_to_show <- cor_ratioVars[cor_to_show, cor_to_show]
+
+  corrplot::corrplot.mixed(cor_ratioVars_to_show,
+                 tl.col="black", tl.pos = "lt", tl.cex = 0.7, tl.srt = 45)
+
+  grDevices::recordPlot()
 }

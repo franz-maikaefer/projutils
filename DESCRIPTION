@@ -13,11 +13,19 @@ LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.0
 Imports: 
+    corrplot,
     dplyr,
+    ggplot2,
+    grDevices,
     lubridate,
+    plotly,
     readr,
     rlang,
+    scales,
+    stats,
     stringr,
-    tibble
+    tibble,
+    tidyselect,
+    trelliscopejs
 URL: https://github.com/franz-maikaefer/projutils
 BugReports: https://github.com/franz-maikaefer/projutils/issues
